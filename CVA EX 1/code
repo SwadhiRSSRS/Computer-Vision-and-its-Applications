@@ -1,0 +1,63 @@
+# EX 1
+# Write a program to demonstrate the working of CNN architecture to classify images
+
+import tensorflow as tf
+from tensorflow.keras import layers, models
+import matplotlib.pyplot as plt
+from tensorflow.keras.datasets import cifar10
+import numpy as np
+
+(x_train, y_train), (x_test, y_test) = cifar10.load_data()
+
+y_test
+
+
+x_train = x_train.astype('float32') / 255.0
+x_test = x_test.astype('float32') / 255.0
+
+model = models.Sequential([
+    layers.Conv2D(32, (3, 3), activation='relu', input_shape=(32, 32, 3)),
+    layers.MaxPooling2D((2, 2)),
+    layers.Conv2D(64, (3, 3), activation='relu'),
+    layers.MaxPooling2D((2, 2)),
+    layers.Conv2D(128, (3, 3), activation='relu'),
+    layers.Flatten(),
+    layers.Dense(128, activation='relu'),
+    layers.Dropout(0.5),
+    layers.Dense(10, activation='softmax')
+])
+
+model.compile(optimizer='adam',
+              loss='sparse_categorical_crossentropy',
+              metrics=['accuracy'])
+
+history = model.fit(x_train, y_train, epochs=10, validation_data=(x_test, y_test))
+
+
+test_loss, test_accuracy = model.evaluate(x_test, y_test)
+print(f"Test Loss: {test_loss}")
+print(f"Test Accuracy: {test_accuracy}")
+
+plt.plot(history.history['accuracy'], label='Training Accuracy')
+plt.plot(history.history['val_accuracy'], label='Validation Accuracy')
+plt.xlabel('Epochs')
+plt.ylabel('Accuracy')
+plt.title('Training and Validation Accuracy')
+plt.legend()
+plt.show()
+
+plt.plot(history.history['loss'], label='Training Loss')
+plt.plot(history.history['val_loss'], label='Validation Loss')
+plt.xlabel('Epochs')
+plt.ylabel('Loss')
+plt.title('Training and Validation Loss')
+plt.legend()
+plt.show()
+
+def plot_image(index):
+    plt.imshow(x_test[index])
+    plt.title(f"True Label: {y_test[index][0]} | Predicted: {np.argmax(model.predict(x_test[index:index+1]))}")
+    plt.axis('off')
+    plt.show()
+
+plot_image(7845)
