@@ -1,0 +1,113 @@
+# EX 3
+
+Build and train a CNN model for Face recognition(L3)
+
+import cv2
+import numpy as np
+import time
+import matplotlib.pyplot as plt
+import tensorflow as tf
+from tensorflow.keras.models import load_model, Sequential # Import Sequential here
+from tensorflow.keras.layers import BatchNormalization, Flatten, Conv2D, MaxPooling2D, Dense, Dropout # Import BatchNormalization and Flatten, Conv2D, MaxPooling2D, Dense and Dropout here
+
+from tensorflow.keras.models import load_model
+from sklearn.datasets import fetch_lfw_people
+from sklearn.model_selection import train_test_split
+from tensorflow.keras.utils import to_categorical
+
+lfw_people = fetch_lfw_people(min_faces_per_person=70, resize=0.4)
+X = lfw_people.images
+y = lfw_people.target
+target_names = lfw_people.target_names
+num_classes = len(target_names)
+
+
+X = X / 255.0
+X = np.expand_dims(X, axis=-1)
+y = to_categorical(y, num_classes=num_classes)
+
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+
+model = Sequential([
+    Conv2D(32, (3, 3), activation='relu', padding='same', input_shape=(X.shape[1], X.shape[2], 1)),
+    BatchNormalization(),
+    MaxPooling2D((2, 2)),
+
+    Conv2D(64, (3, 3), activation='relu', padding='same'),
+    BatchNormalization(),
+    MaxPooling2D((2, 2)),
+
+    Conv2D(128, (3, 3), activation='relu', padding='same'),
+    BatchNormalization(),
+    MaxPooling2D((2, 2)),
+
+    Flatten(),
+    Dense(256, activation='relu'),
+    BatchNormalization(),
+    Dropout(0.5),
+    Dense(128, activation='relu'),
+    BatchNormalization(),
+    Dropout(0.5),
+    Dense(num_classes, activation='softmax')
+])
+
+model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.0005),
+              loss='categorical_crossentropy',
+              metrics=['accuracy'])
+
+history = model.fit(X_train, y_train, epochs=30, batch_size=32, validation_data=(X_test, y_test))
+
+model.save("face_recognition_model.h5")
+
+plt.figure(figsize=(12, 5))
+plt.subplot(1, 2, 1)
+plt.plot(history.history['accuracy'], label='Train Accuracy')
+plt.plot(history.history['val_accuracy'], label='Validation Accuracy')
+plt.legend()
+plt.title("Accuracy")
+
+plt.subplot(1, 2, 2)
+plt.plot(history.history['loss'], label='Train Loss')
+plt.plot(history.history['val_loss'], label='Validation Loss')
+plt.legend()
+plt.title("Loss")
+plt.show()
+
+# Load trained model
+model = tf.keras.models.load_model("/content/face_recognition_model.h5")
+
+# Initialize OpenCV Face Detector
+face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + "haarcascade_frontalface_default.xml")
+
+
+def recognize_face(image_path):
+    image = cv2.imread(image_path)  # Load image
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)  # Convert to grayscale
+    faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
+
+    for (x, y, w, h) in faces:
+        face_roi = gray[y:y+h, x:x+w]  # Extract face
+        face_resized = cv2.resize(face_roi, (X.shape[1], X.shape[2])) / 255.0
+        face_resized = np.expand_dims(face_resized, axis=[0, -1])
+
+        # Predict face label
+        prediction = model.predict(face_resized)
+        predicted_label = np.argmax(prediction)
+
+        # Draw Bounding Box & Label
+        cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 3)
+        cv2.putText(image, target_names[predicted_label], (x, y - 10),
+                    cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+
+    # Convert BGR to RGB for display
+    plt.imshow(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
+    plt.axis("off")
+    plt.title("Face Recognition Output")
+    plt.show()
+
+
+# Test on an image
+test_image_path = "/content/In pics_ Thalapathy Vijay's meets students.jpeg" # Change this to your test image
+recognize_face(test_image_path)
