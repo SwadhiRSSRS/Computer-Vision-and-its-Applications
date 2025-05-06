@@ -1,0 +1,31 @@
+# EX 6
+
+Load and implement the Face Detection method in OpenCV using python
+
+!pip install opencv-python numpy
+
+
+from google.colab.patches import cv2_imshow
+
+
+method 1: using haar cascade classifier
+
+import cv2
+from google.colab.patches import cv2_imshow  # Use this in Colab
+
+# Load Haar Cascade
+face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+
+# Load Image
+image = cv2.imread("/content/sam bahadur.jfif")  # Change to your image file
+gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+# Detect Faces
+faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
+
+# Draw Rectangles
+for (x, y, w, h) in faces:
+    cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 2)
+
+# Display in Colab
+cv2_imshow(image)
