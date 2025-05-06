@@ -1,0 +1,35 @@
+# EX 4
+
+Design and train a model for objects detection with real time example
+
+import torch
+import cv2
+
+# load yolov5 model
+model=torch.hub.load('ultralytics/yolov5','yolov5s')
+
+#load object names
+object_names=model.module.names if hasattr(model,'module')else model.names
+
+#load an image and detect objects
+image=cv2.imread("/content/BikesHelmets4.png")
+results=model(image)
+
+#draw bounding boxes and class names around the detected objects
+for detection in results.xyxy[0]:
+  xmin,ymin,xmax,ymax=detection[0],detection[1],detection[2],detection[3]
+  class_index=int(detection[5])
+  class_name=object_names[class_index]
+
+  # Convert coordinates to integers
+  xmin, ymin, xmax, ymax = int(xmin.item()), int(ymin.item()), int(xmax.item()), int(ymax.item())
+
+  cv2.rectangle(image,(xmin,ymin),(xmax,ymax),(0,255,0),2)
+  cv2.putText(image,class_name,(xmin,ymin-10),cv2.FONT_HERSHEY_SIMPLEX,0.5,(0,255,0),2)
+
+#display the image with bounding boxes and class names
+from google.colab.patches import cv2_imshow # Import the cv2_imshow function
+
+cv2_imshow(image) # Use cv2_imshow instead of cv2.imshow
+cv2.waitKey(0)
+cv2.destroyAllWindows()
